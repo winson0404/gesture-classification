@@ -64,20 +64,63 @@ GESTURES = (
 
 DATASET = os.path.expanduser("~/hagrid/dataset/")
 
-def post_download(root, output_path, target):
+# def post_download(root, output_path, target):
     
-    os.makedirs(f"{root}train/{target}_temp", exist_ok=True)
-    os.system("unzip -j " + output_path +" -d " + f"{root}train/{target}")
+#     os.makedirs(f"{root}train/{target}_temp", exist_ok=True)
+#     os.system("unzip -j " + output_path +" -d " + f"{root}train/{target}")
 
-    os.system("rm " + output_path)
-    for image in tqdm(os.listdir(f"{root}train/{target}")):
-        img = rescale_image(cv2.imread(f"{root}train/{target}/{image}"))
-        cv2.imwrite(f"{root}train/{target}_temp/{image}", img)
+#     os.system("rm " + output_path)
+#     for image in tqdm(os.listdir(f"{root}train/{target}")):
+#         img = rescale_image(cv2.imread(f"{root}train/{target}/{image}"))
+#         cv2.imwrite(f"{root}train/{target}_temp/{image}", img)
         
-        os.system("rm -rf " + f"{root}train/{target}/{image}")
+#         os.system("rm -rf " + f"{root}train/{target}/{image}")
         
-    os.system("rm -r " + f"{root}train/{target}")
-    os.system("mv " + f"{root}train/{target}_temp " + f"{root}train/{target}")
+#     os.system("rm -r " + f"{root}train/{target}")
+#     os.system("mv " + f"{root}train/{target}_temp " + f"{root}train/{target}")
+    
+def post_download(root, category, output_path, target):
+    
+    if category == "test":
+        for target in os.listdir(f"{root}{category}/"):
+            
+            # TODO: remove breakpoint
+            breakpoint()
+            os.makedirs(f"{root}{category}/{target}_temp", exist_ok=True)
+            for image in tqdm(os.listdir(f"{root}{category}/{target}")):
+                img = rescale_image(cv2.imread(f"{root}{category}/{target}/{image}"))
+                cv2.imwrite(f"{root}{category}/{target}_temp/{image}", img)
+                
+                # after resize remove original image
+                os.system("rm -rf " + f"{root}{category}/{target}/{image}")
+            
+            # remove original target folder(which is empty by now)
+            os.system("rm -r " + f"{root}{category}/{target}")
+            
+            # change temp to the main file
+            os.system("mv " + f"{root}{category}/{target}_temp " + f"{root}{category}/{target}")
+    
+    if category == "train":
+        
+        # make a temp folder to store resized_images
+        os.makedirs(f"{root}{category}/{target}_temp", exist_ok=True)
+        
+        # unzip
+        os.system("unzip -j " + output_path +" -d " + f"{root}{category}/{target}")
+        
+        # remove .zip file
+        os.system("rm " + output_path)
+        
+        for image in tqdm(os.listdir(f"{root}{category}/{target}")):
+            # print(image)
+            img = rescale_image(cv2.imread(f"{root}{category}/{target}/{image}"))
+            cv2.imwrite(f"{root}{category}/{target}_temp/{image}", img)
+            
+            os.system("rm -rf " + f"{root}{category}/{target}/{image}")
+            
+        os.system("rm -r " + f"{root}{category}/{target}")
+        os.system("mv " + f"{root}{category}/{target}_temp " + f"{root}{category}/{target}")
+    
 
 # def download_target(args_target):
 #     target, url, train_val, save_path = args_target
@@ -99,6 +142,9 @@ def download(args):
         os.makedirs(testset, exist_ok=True)
         if args.dataset:
             os.system(f"wget {urls['test']} -O {testset}/test.zip")
+            os.system(f"unzip -j {testset}/test.zip -d {testset}")
+            post_download(args.save_path, "test", f"{testset}/test.zip", "test")
+            # os.system(f"rm -r {testset}/test.zip")
         if args.annotations:
             os.system(f"wget {urls['ann_test']} -O {testset}/ann_test.zip")
 
@@ -109,6 +155,7 @@ def download(args):
         os.makedirs(train_val, exist_ok=True)
         if args.dataset:
             for target in args.targets:
+            # parallel download
             # args_list = [(target, urls[target], train_val, args.save_path) for target in args.targets]
             # num_workers = 4
             # pool = Pool(num_workers)
@@ -117,7 +164,7 @@ def download(args):
             # pool.join()
                 output_file = f"{train_val}/{target}.zip"
                 os.system(f"wget {urls[target]} -O {train_val}/{target}.zip")
-                post_download(args.save_path, output_file, target)
+                post_download(args.save_path, "train",  output_file, target)
         if args.annotations:
             os.system(f"wget {urls['ann_train_val']} -O {train_val}/ann_train_val.zip")
 
