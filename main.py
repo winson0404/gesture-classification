@@ -12,7 +12,8 @@ provider = ['CPUExecutionProvider']
 
 if __name__ == "__main__":
     
-    cap = cv2.VideoCapture("/dev/video2")
+    camera_name = "/dev/video0"
+    cap = cv2.VideoCapture(camera_name)
     hand_inf_session = ort.InferenceSession(weight_path, providers=provider)
     
     while cap.isOpened():
@@ -25,7 +26,7 @@ if __name__ == "__main__":
             full_frame_postprocess(frame, out, ratio, dwdh, 0.5)
             
             #TODO: crop the hand and feed to the gesture classifier
-            cv2.imshow("detection", frame)
+            cv2.imshow(camera_name, frame)
             
             
         if cv2.waitKey(1) & 0xFF == ord('q'):
