@@ -1,6 +1,6 @@
 dataset:
-  annotations_path: ../data/
-  dataset_path: /path/to/dataset
+  annotations_path: ../data/annotation/
+  dataset_path: /data/
   targets:
     - call
     - dislike
@@ -9,17 +9,7 @@ dataset:
     - like
     - mute
     - ok
-    - one
-    - palm
-    - peace
-    - rock
     - stop
-    - stop_inverted
-    - three
-    - two_up
-    - two_up_inverted
-    - three2
-    - peace_inverted
     - no_gesture
   image_size: [224, 224]
   subset: -1
