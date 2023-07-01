@@ -1,45 +1,61 @@
 import torch
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import json
 from omegaconf import OmegaConf
 import random
 import numpy as np
 from utils.constants import DATASET_OPERATION
+from utils.transform import Compose
 import cv2
+import os
+
+def get_cropped(img, bbox, label):
+    x1, y1, w, h = bbox
+    
+    
 
 class ClassificationHaGridDataset(torch.utils.data.Dataset):
-    def __init__(self, conf:OmegaConf, op:DATASET_OPERATION, transform=None):
-        self.transform = transform
+    def __init__(self, conf:OmegaConf, op:DATASET_OPERATION, transform:Optional[Compose]=None):
+        
+        # # set seed
+        
         self.conf = conf
+        random.seed(self.conf.random_seed)
+        self.transform = transform
         self.op:DATASET_OPERATION = op
         #load data from data_path
         self.data = self._get_images()
+    
+        
 
     def __len__(self):
-        return len(self.images)
+        return len(self.data[0])
 
     def __getitem__(self, idx):
-        bboxs, labels, ids = self.data
+        bboxes, labels, ids = self.data
         box_scale = 1.0
         if self.op == DATASET_OPERATION.TRAIN:
             box_scale = np.random.uniform(low=1.0, high=2.0)
         
-        img = self._crop_image(idx, bboxs, ids, box_scale)
+        img = self._crop_image(idx, bboxes, ids, box_scale)
         label = labels[idx]
         if self.transform:
-            img = self.transform(img, label)
+            img, label = self.transform(img, label)
         
         
-        return img, labels[idx]
+        return img, label
         
     
     def _crop_image(self, idx, bbox, img_id, box_scale):
-        img = cv2.imread(self.data_path+img_id[idx]+".jpg")
+        data_path = os.path.join(self.conf.dataset.dataset_path, DATASET_OPERATION.TRAIN.value if self.op.value != DATASET_OPERATION.TEST.value else DATASET_OPERATION.TEST.value)
+        
+        # breakpoint()
+        img = cv2.imread(os.path.join(data_path, img_id[idx]+".jpg"))
         
         width, height = img.shape[1], img.shape[0]
         
         # get the actual bbox
-        x1, y1, w, h = bbox
+        x1, y1, w, h = bbox[idx]
         bbox_abs = [x1 * width, y1 * height, (x1 + w) * width, (y1 + h) * height]
         
         # convert to int
@@ -80,41 +96,41 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
         padded_image[:] = (0, 0, 0)
         
         # Calculate the padding required
-        pad_top = (height - resized_height) // 2
-        pad_bottom = height - resized_height - pad_top
-        pad_left = (width - resized_width) // 2
-        pad_right = width - resized_width - pad_left
+        pad_top = (target_height - resized_height) // 2
+        pad_bottom = target_height - resized_height - pad_top
+        pad_left = (target_width - resized_width) // 2
+        pad_right = target_width - resized_width - pad_left
 
-        image_resized = cv2.copyMakeBorder(resized_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
-
+        try:
+            image_resized = cv2.copyMakeBorder(resized_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        except:
+            print("Error!")
+            breakpoint()
         return image_resized
 
-    def _get_images(self, path:str)->List[str]:
-        bboxs, labels, ids = self._get_annotation()
-        
-        # set seed
-        random.seed(self.conf.random_seed)
+    def _get_images(self)->List[str]:
+        bboxes, labels, ids = self._get_annotation()
         
         # zip and shuffle
-        data = list(zip(bboxs, labels, ids))
+        data = list(zip(bboxes, labels, ids))
         random.shuffle(data)
         
         # unzip
-        bboxs, labels, ids = zip(*data)
+        bboxes, labels, ids = zip(*data)
         
         # perform train, test, validation split
         if not self.op == DATASET_OPERATION.TEST:
             if self.op == DATASET_OPERATION.TRAIN:
-                bboxs = bboxs[:int(len(bboxs)*0.8)]
+                bboxes = bboxes[:int(len(bboxes)*0.8)]
                 labels = labels[:int(len(labels)*0.8)]
                 ids = ids[:int(len(ids)*0.8)]
                 
             if self.op == DATASET_OPERATION.VALIDATION:
-                bboxs = bboxs[int(len(bboxs)*0.8):]
+                bboxes = bboxes[int(len(bboxes)*0.8):]
                 labels = labels[int(len(labels)*0.8):]
                 ids =  ids[int(len(ids)*0.8):]
     
-        return bboxs, labels, ids
+        return bboxes, labels, ids
     
     def _get_annotation(self)->Tuple:
         """
@@ -123,37 +139,43 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
         If an image have both no-gesture and gesture, it will pick one based on a 0.3 no-gesture - 0.7 gesture probability 
 
         Returns:
-            Tuple: (bbox, label, id)
+            Tuple: (bbox, label, name)
         """
-        bboxs = []
+        bboxes = []
         labels = []
         ids = []
         
-        for target in self.conf.dataset.annotation_path:
-            ann = json.load(open(self.conf.dataset.annotation_path+target, "r"))
-            for id, dat in ann.items():
-                ids.append(f"{target[:-5]}/{id}")
+        category_path = os.path.join(self.conf.dataset.annotation_path, "train" if self.op.value != DATASET_OPERATION.TEST.value else DATASET_OPERATION.TEST)
+        for target in self.conf.dataset.targets:
+            if target == "no_gesture":
+                continue
+            ann = json.load(open(os.path.join(category_path, f"{target}.json"), "r"))
+            for name, dat in ann.items():
+                ids.append(f"{target}/{name}")
+                # breakpoint()
                 if len(labels) > 1:
-                    pick = np.random.choice(["no_gesture","gesture"], p=[0.3, 0.7])
+                    pick = random.choices(["no_gesture", "gesture"], weights=[0.3, 0.7])[0]
                     # for index, label in enumerate(ann["labels"]):
                     #     if label == pick:
                     #         labels.append(index)
-                    #         bboxs.append(ann["bbox"][index])
+                    #         bboxes.append(ann["bbox"][index])
                     if pick == "no_gesture":
                         if dat["labels"][0] == "no_gesture":
                             labels.append(dat["labels"][0])
-                            bboxs.append(dat["bbox"][0])
+                            bboxes.append(dat["bboxes"][0])
                         else:
                             labels.append(dat["labels"][-1])
+                            bboxes.append(dat["bboxes"][-1])
                     else:
-                        if ann["labels"][0] == "no_gesture":
+                        if dat["labels"][0] == "no_gesture":
                             labels.append(dat["labels"][-1])
-                            bboxs.append(dat["bbox"][-1])
+                            bboxes.append(dat["bboxes"][-1])
                         else:
                             labels.append(dat["labels"][0])
-                            bboxs.append(dat["bbox"][0])
+                            bboxes.append(dat["bboxes"][0])
                 else:
                     labels.append(dat["labels"][0])
-                    bboxs.append(dat["bbox"][0])
-                            
-        return (bboxs, labels, ids)
+                    bboxes.append(dat["bboxes"][0])
+        
+        # breakpoint()
+        return (bboxes, labels, ids)

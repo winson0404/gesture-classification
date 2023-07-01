@@ -1,23 +1,37 @@
 import os
 import torch
-from dataset import ClassificationHaGridDataset
+import cv2
+from torch.utils.data import DataLoader
+from dataset.dataset import ClassificationHaGridDataset
 from omegaconf import OmegaConf
-import torchvision.transforms as transforms
 from utils.transform import Compose
 from utils.constants import DATASET_OPERATION
+from tqdm import tqdm
 
 if __name__ == "__main__":
-    print("Hello World")
+    # print("Hello World")
     #initial config
-    conf = OmegaConf.load("config/default.yaml")
-    transform = Compose()
+    conf = OmegaConf.load("configs/default.yaml")
+    # transform = Compose()
     
-    train_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.TRAIN, transform=transform)
-    validation_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.VALIDATION, transform=transform)
+    train_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.TRAIN)
+    # validation_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.VALIDATION, transform=transform)
     
     
     # Load the data from data loader
-    
+    train_loader = data_loader = DataLoader(train_dataset, batch_size=conf.train_params.train_batch_size, shuffle=False)
+
+    for batch in data_loader:
+        images, labels = batch
+        for i, _ in enumerate(images):
+            image = images[i].permute(1, 2, 0).numpy()  # Convert tensor to numpy array
+            # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # breakpoint()
+            cv2.imwrite(f"test/{i}_{labels[i]}.jpg", images[i].numpy())
+            
+        break
+        
+
     
     # Set up optimizer
     
