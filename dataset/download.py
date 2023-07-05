@@ -82,23 +82,23 @@ DATASET = os.path.expanduser("~/hagrid/dataset/")
 def post_download(root, category, output_path, target):
     
     if category == "test":
-        for target in os.listdir(f"{root}{category}/"):
+        for _target in os.listdir(f"{root}{category}/"):
             
             # TODO: remove breakpoint
-            breakpoint()
-            os.makedirs(f"{root}{category}/{target}_temp", exist_ok=True)
-            for image in tqdm(os.listdir(f"{root}{category}/{target}")):
-                img = rescale_image(cv2.imread(f"{root}{category}/{target}/{image}"))
-                cv2.imwrite(f"{root}{category}/{target}_temp/{image}", img)
+            # breakpoint()
+            os.makedirs(f"{root}{category}/{_target}_temp", exist_ok=True)
+            for image in tqdm(os.listdir(f"{root}{category}/{_target}")):
+                img = rescale_image(cv2.imread(f"{root}{category}/{_target}/{image}"))
+                cv2.imwrite(f"{root}{category}/{_target}_temp/{image}", img)
                 
                 # after resize remove original image
-                os.system("rm -rf " + f"{root}{category}/{target}/{image}")
+                os.system("rm -rf " + f"{root}{category}/{_target}/{image}")
             
             # remove original target folder(which is empty by now)
-            os.system("rm -r " + f"{root}{category}/{target}")
+            os.system("rm -r " + f"{root}{category}/{_target}")
             
             # change temp to the main file
-            os.system("mv " + f"{root}{category}/{target}_temp " + f"{root}{category}/{target}")
+            os.system("mv " + f"{root}{category}/{_target}_temp " + f"{root}{category}/{_target}")
     
     if category == "train":
         
@@ -139,12 +139,13 @@ def download(args):
 
     if args.test:
         testset = os.path.join(args.save_path, "test")
-        os.makedirs(testset, exist_ok=True)
+        zip_file = os.path.join(args.save_path, "test.zip")
+        # os.makedirs(testset, exist_ok=True)
         if args.dataset:
-            os.system(f"wget {urls['test']} -O {testset}/test.zip")
-            os.system(f"unzip -j {testset}/test.zip -d {testset}")
-            post_download(args.save_path, "test", f"{testset}/test.zip", "test")
-            # os.system(f"rm -r {testset}/test.zip")
+            # os.system(f"wget {urls['test']} -O {zip_file}")
+            # os.system(f"unzip -j {zip_file} -d {testset}")
+            post_download(args.save_path, "test", zip_file, "test")
+            # os.system(f"rm -r {zip_file}")
         if args.annotations:
             os.system(f"wget {urls['ann_test']} -O {testset}/ann_test.zip")
 

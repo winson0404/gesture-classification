@@ -1,5 +1,11 @@
+import torch
+from torch import nn, Tensor
 import numpy as np
 import cv2
+import random
+from models.classification import MobileNetV3
+from constants import MOBILENETV3_SIZE
+import os
 
 def full_frame_preprocess(im, new_shape=(320, 320), color=(114, 114, 114), auto=True, scaleup=True, stride=32):
     # Resize and pad image while meeting stride-multiple constraints
@@ -52,3 +58,64 @@ def full_frame_postprocess(image, model_output, ratio, dwdh, threshold):
         color = (0,255,0)
         cv2.rectangle(image,box[:2],box[2:],color,2)
         cv2.putText(image,f"{score}",(box[0], box[1] - 2),cv2.FONT_HERSHEY_SIMPLEX,0.75,[225, 255, 255],thickness=2)
+
+
+def set_random_state(seed: int)-> None:
+    """
+    Set random seed for torch, numpy, random
+
+    Parameters
+    ----------
+    random_seed: int
+        Random seed from config
+    """
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    
+    
+def build_model(
+    model_name: str,
+    num_classes: int,
+    device: str,
+    checkpoint: str = None,
+    pretrained: bool = False,
+    freezed: bool = False
+) -> nn.Module:
+    """
+    Build modela and load checkpoint
+
+    Parameters
+    ----------
+    model_name : str
+        Model name e.g. ResNet18, MobileNetV3_small, Vitb32
+    num_classes : int
+        Num classes for each task
+    checkpoint : str
+        Path to model checkpoint
+    device : str
+        Cpu or CUDA device
+    pretrained : false
+        Use pretrained model
+    freezed : false
+        Freeze model layers
+    """
+    models = {
+        "MobileNetV3_large": MobileNetV3(
+            num_classes=num_classes, size=MOBILENETV3_SIZE.LARGE, pretrained=pretrained, freezed=freezed
+        ),
+        "MobileNetV3_small": MobileNetV3(
+            num_classes=num_classes, size=MOBILENETV3_SIZE.SMALL, pretrained=pretrained, freezed=freezed
+        )
+    }
+
+    model = models[model_name]
+
+    if checkpoint is not None:
+        # checkpoint = os.path.expanduser(checkpoint)
+        if os.path.exists(checkpoint):
+            checkpoint = torch.load(checkpoint, map_location=torch.device(device))["state_dict"]
+            model.load_state_dict(checkpoint)
+
+    model.to(device)
+    return model

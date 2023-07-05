@@ -1,5 +1,5 @@
-python custom_download.py --save_path ./data/ \
-                   --train \
+python download.py --save_path ../../data/ \
+                   --test \
                    --dataset
 
 
