@@ -6,6 +6,7 @@ from dataset.dataset import ClassificationHaGridDataset
 from omegaconf import OmegaConf
 from utils.transform import Compose
 from utils.constants import DATASET_OPERATION
+from utils.logging import Logger
 from tqdm import tqdm
 from trainer import ClassificationTrainer
 
@@ -14,7 +15,11 @@ if __name__ == "__main__":
     #initial config
     conf = OmegaConf.load("configs/default.yaml")
     
-    trainer = ClassificationTrainer(conf)
+    logger = Logger("HaGRID", "MobileNet_Classification", conf)
+    trainer = ClassificationTrainer(conf, logger=logger)
+
+    trainer.run_train()
+    
     # transform = Compose()
     
     # train_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.TRAIN)
