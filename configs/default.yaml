@@ -1,6 +1,8 @@
+experiment_name: MobileNetV3_small
+project_name: HaGRID_Test
 dataset:
-  annotation_path: ../data/annotation/
-  dataset_path: ../data/
+  annotation_path: /media/weixiong0404/WINSON_EXT/data/annotation/
+  dataset_path: /media/weixiong0404/WINSON_EXT/data/
   targets:
     - call
     - dislike
@@ -14,15 +16,14 @@ dataset:
   subset: -1
 random_seed: 42
 device: 'cpu'
-experiment_name: MobileNetV3_small
 model:
   name: 'MobileNetV3_small'  # 'MobileNetV3_large' or 'MobileNetV3_small' or 'ResNet18'
-  pretrained: False
+  pretrained: True
   freezed: False
   start_epoch: 0
-  checkpoint: /path/to/chackpoint
   full_frame: False
 optimizer:
+  optimizer: rmsprop # adam, sgd, rmsprop
   lr: 0.005
   momentum: 0.9
   weight_decay: 0.0005
@@ -32,8 +33,7 @@ train_params:
   epochs: 100
   num_workers: 16
   train_batch_size: 32
-  test_batch_size: 64
-  prefetch_factor: 16
+  validation_batch_size: 32
 metric_params:
   metrics: ['accuracy', 'f1_score', 'precision', 'recall']
   average: 'weighted'

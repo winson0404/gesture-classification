@@ -4,8 +4,30 @@ import numpy as np
 import cv2
 import random
 from models.classification import MobileNetV3
-from constants import MOBILENETV3_SIZE
+from utils.constants import MOBILENETV3_SIZE
 import os
+from typing import Dict
+from omegaconf import OmegaConf
+from torchmetrics.functional import accuracy, auroc, confusion_matrix, f1_score, precision, recall
+
+
+def get_metrics(conf:OmegaConf, preds: Tensor, labels: Tensor) -> Dict:
+    average = conf.metric_params["average"]
+    metrics = conf.metric_params["metrics"]
+    num_classes = len(conf.dataset.targets)
+    
+    scores = {
+        "accuracy": accuracy(preds, labels, average=average, num_classes=num_classes),
+        "f1_score": f1_score(preds, labels, average=average, num_classes=num_classes),
+        "precision": precision(preds, labels, average=average, num_classes=num_classes),
+        "recall": recall(preds, labels, average=average, num_classes=num_classes),
+    }
+    
+    needed_scores = {}    
+    for metric in metrics:
+        needed_scores[metric] = round(float(scores[metric]), 6)
+        
+    return needed_scores
 
 def full_frame_preprocess(im, new_shape=(320, 320), color=(114, 114, 114), auto=True, scaleup=True, stride=32):
     # Resize and pad image while meeting stride-multiple constraints
@@ -102,10 +124,10 @@ def build_model(
     """
     models = {
         "MobileNetV3_large": MobileNetV3(
-            num_classes=num_classes, size=MOBILENETV3_SIZE.LARGE, pretrained=pretrained, freezed=freezed
+            num_classes=num_classes, model_size=MOBILENETV3_SIZE.LARGE, pretrained=pretrained, freezed=freezed
         ),
         "MobileNetV3_small": MobileNetV3(
-            num_classes=num_classes, size=MOBILENETV3_SIZE.SMALL, pretrained=pretrained, freezed=freezed
+            num_classes=num_classes, model_size=MOBILENETV3_SIZE.SMALL, pretrained=pretrained, freezed=freezed
         )
     }
 
@@ -119,3 +141,39 @@ def build_model(
 
     model.to(device)
     return model
+
+
+def save_checkpoint(
+    output_dir: str, config_dict: Dict, model: nn.Module, optimizer: torch.optim.Optimizer, epoch: int, name: str
+) -> None:
+    """
+    Save checkpoint dictionary
+
+    Parameters
+    ----------
+    output_dir : str
+        Path to directory model checkpoint
+    config_dict : Dict
+        Config dictionary
+    model : nn.Module
+        Model for checkpoint save
+    optimizer : torch.optim.Optimizer
+        Optimizer
+    epoch : int
+        Epoch number
+    name : str
+        Model name
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(os.path.join(output_dir), exist_ok=True)
+
+    # .pth is something like a zip file for pickle (hence can include additional informations)
+    checkpoint_path = os.path.join(output_dir, f"{name}.pth")
+
+    checkpoint_dict = {
+        "state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "epoch": epoch,
+        "config": config_dict,
+    }
+    torch.save(checkpoint_dict, checkpoint_path)

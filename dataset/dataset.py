@@ -25,8 +25,9 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
         self.op:DATASET_OPERATION = op
         #load data from data_path
         self.data = self._get_images()
-    
-        
+        self.labels = {
+            label: num for (label, num) in zip(self.conf.dataset.targets, range(len(self.conf.dataset.targets)))
+        }
 
     def __len__(self):
         return len(self.data[0])
@@ -39,6 +40,7 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
         
         img = self._crop_image(idx, bboxes, ids, box_scale)
         label = labels[idx]
+        label = self.labels[label]
         if self.transform:
             img, label = self.transform(img, label)
         

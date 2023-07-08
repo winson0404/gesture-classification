@@ -9,45 +9,36 @@ from utils.constants import DATASET_OPERATION
 from utils.logging import Logger
 from tqdm import tqdm
 from trainer import ClassificationTrainer
+import logging
+
+
+logging.basicConfig(format="[LINE:%(lineno)d] %(levelname)-8s [%(asctime)s]  %(message)s", level=logging.INFO)
+
 
 if __name__ == "__main__":
-    # print("Hello World")
+    
     #initial config
     conf = OmegaConf.load("configs/default.yaml")
     
+    # create output directory
+    project_path = conf.project_name
+    experiment_path = os.path.join(project_path, conf.experiment_name)
+    os.makedirs(project_path, exist_ok=True)
+    if os.path.exists(experiment_path):
+        os.removedirs(experiment_path)
+    os.makedirs(experiment_path, exist_ok=False)
+    
+    # initialize wandb logger
     logger = Logger("HaGRID", "MobileNet_Classification", conf)
-    trainer = ClassificationTrainer(conf, logger=logger)
+    # logger = None
+    
+    # initialize trainer
+    trainer = ClassificationTrainer(conf, output_path=experiment_path, logger=logger)
 
+    # run training task (include validation)
     trainer.run_train()
     
-    # transform = Compose()
-    
-    # train_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.TRAIN)
-    # # validation_dataset = ClassificationHaGridDataset(conf, op=DATASET_OPERATION.VALIDATION, transform=transform)
     
     
-    # # Load the data from data loader
-    # train_loader = data_loader = DataLoader(train_dataset, batch_size=conf.train_params.train_batch_size, shuffle=False)
-
-    # for batch in data_loader:
-    #     images, labels = batch
-    #     for i, _ in enumerate(images):
-    #         image = images[i].permute(1, 2, 0).numpy()  # Convert tensor to numpy array
-    #         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    #         # breakpoint()
-    #         cv2.imwrite(f"test/{i}_{labels[i]}.jpg", images[i].numpy())
-            
-    #     break
-        
-
-    
-    # Set up optimizer
-    
-    
-    # Initialize model
-    
-    
-    # Train the model
-    
-    
-    # Export model
+    # end logger job
+    logger.finish()
