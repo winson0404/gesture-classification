@@ -14,15 +14,17 @@ class Logger:
         if not self.is_logged_in():
             self.wandb.login()
         
-        # TODO: change config and edit this:
         self.wandb.init(
             project=self.project_name, 
             name=self.experiment_name, 
             config={
-                # "learning_rate": self.conf.learning_rate,
-                # "train_batch_size": self.conf.traionbatch_size,
-                # "validation_batch_size": self.conf.validation_batch_size,
-                # "epoches": self.conf.epoches,
+                "model": self.conf.model.name,
+                "epochs": self.conf.train_params.epochs,
+                "train_batch_size": self.conf.train_params.train_batch_size,
+                "validation_batch_size": self.conf.train_params.validation_batch_size,
+                "optimizer": self.conf.optimizer.optimizer,
+                "learning_rate": self.conf.optimizer.lr,
+                "momentum": self.conf.optimizer.momentum if self.conf.optimizer.optimizer != "adam" else None,
             })
 
     def is_logged_in(self):
@@ -32,7 +34,7 @@ class Logger:
         new_dict = {}
         for key, value in metrics.items():
             new_dict[f"{category}/{key}"] = value
-        self.wandb.log(**new_dict, commit=False)
+        self.wandb.log(new_dict)
 
     def log_image_table(self, images, predicted, labels, probs):
         "Log a wandb.Table with (img, pred, target, scores)"

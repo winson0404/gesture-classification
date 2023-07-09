@@ -11,8 +11,6 @@ import os
 
 def get_cropped(img, bbox, label):
     x1, y1, w, h = bbox
-    
-    
 
 class ClassificationHaGridDataset(torch.utils.data.Dataset):
     def __init__(self, conf:OmegaConf, op:DATASET_OPERATION, transform:Optional[Compose]=None):
@@ -107,7 +105,6 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
             image_resized = cv2.copyMakeBorder(resized_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
         except:
             print("Error!")
-            breakpoint()
         return image_resized
 
     def _get_images(self)->List[str]:

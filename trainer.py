@@ -9,7 +9,7 @@ import logging
 from omegaconf import OmegaConf
 from tqdm import tqdm
 import math
-from collections import defaultdict
+import os
 
 class ClassificationTrainer:
     def __init__(self, conf:OmegaConf, output_path:str, logger:Logger = None) -> None:
@@ -56,7 +56,7 @@ class ClassificationTrainer:
         
         return optimizer
     
-    def _run_epoch(self, device:str, current_epoch:int,  train_loader:ClassificationHaGridDataset)->None:
+    def _run_epoch(self, device:str, current_epoch:int, train_loader:ClassificationHaGridDataset, lr_scheduler_warmup: torch.optim.lr_scheduler.LinearLR=None)->None:
         
         # set to train mode
         self.model.train()
@@ -78,6 +78,9 @@ class ClassificationTrainer:
                 # go through the network and get output
                 output = self.model(images)
 
+                # breakpoint()
+                #convert labels to tensor
+                labels = torch.tensor(labels, dtype=torch.long, device=device)
                 loss = criterion(output, labels)
             
                 loss_value = loss.item()
@@ -89,10 +92,13 @@ class ClassificationTrainer:
                     logging.info("Loss is {}, stopping training".format(loss_value))
                     exit(1)
                     
-                loss.backward()
                 
                 self.optimizer.zero_grad()
+                loss.backward()
                 self.optimizer.step()
+                
+                if lr_scheduler_warmup is not None:
+                    lr_scheduler_warmup.step()
 
     def _run_eval(self, device:str, current_epoch:int, validation_loader:ClassificationHaGridDataset, mode:str="valid")->None:
         f1_score = None
@@ -111,9 +117,11 @@ class ClassificationTrainer:
                         output = self.model(images)
                         predicts.extend(output.argmax(dim=1).cpu().numpy())
                         targets.extend(labels.numpy())
-                        
                     
-                    metric = get_metrics(predicts, targets)
+                    predicts = torch.tensor(predicts, dtype=torch.long, device=self.conf.device)
+                    targets = torch.tensor(targets, dtype=torch.long, device=self.conf.device)
+                    
+                    metric = get_metrics(self.conf, predicts, targets)
                     f1_score = metric["f1_score"]
                     
                     if self.logger is not None:
@@ -148,16 +156,25 @@ class ClassificationTrainer:
         conf_dictionary = OmegaConf.to_container(self.conf)
         for i in range(self.epochs):
             logging.info(f"Epoch {i+1}/{self.epochs}")
-            self._run_epoch(device=self.conf.device, current_epoch=i, train_loader=train_loader)
+            
+            warmup_iters = min(1000, len(train_loader) - 1)
+            lr_scheduler_warmup = torch.optim.lr_scheduler.LinearLR(
+                self.optimizer, start_factor=self.conf.scheduler.start_factor, total_iters=warmup_iters
+            )
+            self._run_epoch(device=self.conf.device, current_epoch=i, train_loader=train_loader, lr_scheduler_warmup=lr_scheduler_warmup)
             metric_value = self._run_eval(device=self.conf.device, current_epoch=i, validation_loader=validation_loader)
+            
+            # early stopping
+            if metric_value - best_metric > self.conf.train_params.early_stopping:
+                break
             
             # get checkpoint based on f1 score
             if metric_value > best_metric:
                 best_metric = metric_value
-                save_checkpoint(self.output_path, conf_dictionary, self.model, self.optimizer, self.epoch, "best_model")
+                save_checkpoint(self.output_path, conf_dictionary, self.model, self.optimizer, i, "best_model")
 
         return model
     
 
-    def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
+    def save_model(self, path:str, name:str="model"):
+        torch.save(self.model.state_dict(), os.path.join(path, name+".pth"))

@@ -51,3 +51,5 @@ docs/_build/
 
 # Independent folder
 /experiments/
+/data/
+/output/

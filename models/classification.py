@@ -39,3 +39,7 @@ class MobileNetV3(torch.nn.Module):
         gesture = self.gesture_classifier(x)
         
         return gesture
+    
+    
+# class ResNet
+    

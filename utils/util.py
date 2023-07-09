@@ -6,9 +6,10 @@ import random
 from models.classification import MobileNetV3
 from utils.constants import MOBILENETV3_SIZE
 import os
-from typing import Dict
+from typing import Dict, Tuple, List
 from omegaconf import OmegaConf
 from torchmetrics.functional import accuracy, auroc, confusion_matrix, f1_score, precision, recall
+import torch.onnx
 
 
 def get_metrics(conf:OmegaConf, preds: Tensor, labels: Tensor) -> Dict:
@@ -16,11 +17,14 @@ def get_metrics(conf:OmegaConf, preds: Tensor, labels: Tensor) -> Dict:
     metrics = conf.metric_params["metrics"]
     num_classes = len(conf.dataset.targets)
     
+    # preds = preds.cpu().detach().numpy()
+    # labels = labels.cpu().detach().numpy()
+    
     scores = {
-        "accuracy": accuracy(preds, labels, average=average, num_classes=num_classes),
-        "f1_score": f1_score(preds, labels, average=average, num_classes=num_classes),
-        "precision": precision(preds, labels, average=average, num_classes=num_classes),
-        "recall": recall(preds, labels, average=average, num_classes=num_classes),
+        "accuracy": accuracy(preds, labels, task="multiclass", average=average, num_classes=num_classes),
+        "f1_score": f1_score(preds, labels, task="multiclass", average=average, num_classes=num_classes),
+        "precision": precision(preds, labels, task="multiclass", average=average, num_classes=num_classes),
+        "recall": recall(preds, labels, task="multiclass", average=average, num_classes=num_classes),
     }
     
     needed_scores = {}    
@@ -63,24 +67,71 @@ def full_frame_preprocess(im, new_shape=(320, 320), color=(114, 114, 114), auto=
     
     return im, r, (dw, dh)
 
-
-
 def full_frame_postprocess(image, model_output, ratio, dwdh, threshold):
-    for i,(batch_id,x0,y0,x1,y1,cls_id,score) in enumerate(model_output):
+    box = []
+    score = -1
+    for i,(batch_id,x0,y0,x1,y1,_,score) in enumerate(model_output):
         if score < threshold:
             continue
         if batch_id >= 6:
             break
+        # breakpoint()
         box = np.array([x0,y0,x1,y1])
         box -= np.array(dwdh*2)
         box /= ratio
         box = box.round().astype(np.int32).tolist()
-        cls_id = int(cls_id)
+        
         score = round(float(score),3)
+    return box, score
+
+
+
+def draw_image(image, box, score, text):
         color = (0,255,0)
         cv2.rectangle(image,box[:2],box[2:],color,2)
         cv2.putText(image,f"{score}",(box[0], box[1] - 2),cv2.FONT_HERSHEY_SIMPLEX,0.75,[225, 255, 255],thickness=2)
 
+
+def crop_roi_image(img, bbox, target_size):
+        width, height = img.shape[1], img.shape[0]
+        
+        # get the actual bbox
+        x1, y1, x2, y2 = bbox
+        
+
+        crop_image = img[y1:y2, x1:x2]
+        
+        # scale back to input size and pad
+        
+        # get dimension
+        cropped_height, cropped_width, _ = crop_image.shape
+        target_width, target_height = target_size
+        
+        # choose scaling factor based on the longest height/width
+        side = max(cropped_height, cropped_width)
+        scale = (target_width if target_width >= target_height else target_height) / side
+        
+        
+        # calculate new dimension and resize
+        resized_width, resized_height = int(cropped_width * scale), int(cropped_height * scale)
+        resized_image = cv2.resize(crop_image, (resized_width, resized_height))
+        
+        # pad the cropped gesture image to the input size
+        padded_image = np.zeros((target_height, target_width, 3), dtype=np.uint8)
+        padded_image[:] = (0, 0, 0)
+        
+        # Calculate the padding required
+        pad_top = (target_height - resized_height) // 2
+        pad_bottom = target_height - resized_height - pad_top
+        pad_left = (target_width - resized_width) // 2
+        pad_right = target_width - resized_width - pad_left
+
+        try:
+            image_resized = cv2.copyMakeBorder(resized_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        except:
+            print("Error!")
+            breakpoint()
+        return image_resized
 
 def set_random_state(seed: int)-> None:
     """
@@ -177,3 +228,4 @@ def save_checkpoint(
         "config": config_dict,
     }
     torch.save(checkpoint_dict, checkpoint_path)
+    

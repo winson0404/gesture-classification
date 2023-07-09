@@ -1,4 +1,5 @@
 import os
+import shutil
 import torch
 import cv2
 from torch.utils.data import DataLoader
@@ -21,15 +22,17 @@ if __name__ == "__main__":
     conf = OmegaConf.load("configs/default.yaml")
     
     # create output directory
-    project_path = conf.project_name
-    experiment_path = os.path.join(project_path, conf.experiment_name)
+    project_path = os.path.join("output", conf.project_name)
     os.makedirs(project_path, exist_ok=True)
+    
+    # create experiment directory
+    experiment_path = os.path.join(project_path, conf.experiment_name)
     if os.path.exists(experiment_path):
-        os.removedirs(experiment_path)
+        shutil.rmtree(experiment_path, ignore_errors=False, onerror=None)
     os.makedirs(experiment_path, exist_ok=False)
     
     # initialize wandb logger
-    logger = Logger("HaGRID", "MobileNet_Classification", conf)
+    logger = Logger(conf.project_name, conf.experiment_name, conf)
     # logger = None
     
     # initialize trainer
@@ -38,7 +41,8 @@ if __name__ == "__main__":
     # run training task (include validation)
     trainer.run_train()
     
-    
+    # save model
+    trainer.save_model(experiment_path, output_name="model")
     
     # end logger job
     logger.finish()
