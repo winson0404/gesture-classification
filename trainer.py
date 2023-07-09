@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils.util import set_random_state, build_model, save_checkpoint, get_metrics
 from utils.transform import Compose
 from utils.constants import DATASET_OPERATION
-from utils.logging import Logger
+from utils.logger import Logger
 from dataset.dataset import ClassificationHaGridDataset
 import logging
 from omegaconf import OmegaConf

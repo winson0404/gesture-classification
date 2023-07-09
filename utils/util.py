@@ -67,9 +67,10 @@ def full_frame_preprocess(im, new_shape=(320, 320), color=(114, 114, 114), auto=
     
     return im, r, (dw, dh)
 
-def full_frame_postprocess(image, model_output, ratio, dwdh, threshold):
+def full_frame_postprocess(model_output, ratio, dwdh, threshold):
     box = []
     score = -1
+    # breakpoint()
     for i,(batch_id,x0,y0,x1,y1,_,score) in enumerate(model_output):
         if score < threshold:
             continue
@@ -89,7 +90,7 @@ def full_frame_postprocess(image, model_output, ratio, dwdh, threshold):
 def draw_image(image, box, score, text):
         color = (0,255,0)
         cv2.rectangle(image,box[:2],box[2:],color,2)
-        cv2.putText(image,f"{score}",(box[0], box[1] - 2),cv2.FONT_HERSHEY_SIMPLEX,0.75,[225, 255, 255],thickness=2)
+        cv2.putText(image,f"{text} {score}",(box[0], box[1] - 2),cv2.FONT_HERSHEY_SIMPLEX,0.75,[225, 255, 255],thickness=2)
 
 
 def crop_roi_image(img, bbox, target_size):
@@ -131,6 +132,12 @@ def crop_roi_image(img, bbox, target_size):
         except:
             print("Error!")
             breakpoint()
+            
+        image_resized = image_resized.astype(np.float32)
+        #resize to (1, 3, 224, 224)
+        image_resized = image_resized.transpose((2, 0, 1))
+        image_resized = np.expand_dims(image_resized, 0)
+        image_resized = np.ascontiguousarray(image_resized)
         return image_resized
 
 def set_random_state(seed: int)-> None:

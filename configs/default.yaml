@@ -7,9 +7,9 @@ dataset:
     - call
     - dislike
     # - fist
-    # - like
+    - like
     # - mute
-    # - ok
+    - ok
     # - stop
     - no_gesture
   image_size: [224, 224]

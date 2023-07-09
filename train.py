@@ -7,7 +7,7 @@ from dataset.dataset import ClassificationHaGridDataset
 from omegaconf import OmegaConf
 from utils.transform import Compose
 from utils.constants import DATASET_OPERATION
-from utils.logging import Logger
+from utils.logger import Logger
 from tqdm import tqdm
 from trainer import ClassificationTrainer
 import logging
