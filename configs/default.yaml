@@ -1,5 +1,5 @@
-project_name: HaGRID_Test
-experiment_name: with_scheduler
+project_name: MobileNetSmall
+experiment_name: sgd0_0005
 dataset:
   annotation_path: C:\Users\User\projects\data\annotation\
   dataset_path: C:\Users\User\projects\data\
@@ -10,7 +10,7 @@ dataset:
     - like
     # - mute
     - ok
-    # - stop
+    - stop
     - no_gesture
   image_size: [224, 224]
   subset: -1
@@ -30,7 +30,7 @@ optimizer:
 scheduler:
   start_factor: 0.001
 train_params:
-  epochs: 30
+  epochs: 20
   num_workers: 16
   train_batch_size: 32
   validation_batch_size: 32

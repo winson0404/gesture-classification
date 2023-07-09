@@ -4,12 +4,14 @@ from utils.util import set_random_state, build_model, save_checkpoint, get_metri
 from utils.transform import Compose
 from utils.constants import DATASET_OPERATION
 from utils.logger import Logger
+from utils.convert_onnx import save_onnx
 from dataset.dataset import ClassificationHaGridDataset
 import logging
 from omegaconf import OmegaConf
 from tqdm import tqdm
 import math
 import os
+import csv
 
 class ClassificationTrainer:
     def __init__(self, conf:OmegaConf, output_path:str, logger:Logger = None) -> None:
@@ -154,6 +156,7 @@ class ClassificationTrainer:
         
         best_metric = -1
         conf_dictionary = OmegaConf.to_container(self.conf)
+        self.epochs = 1
         for i in range(self.epochs):
             logging.info(f"Epoch {i+1}/{self.epochs}")
             
@@ -175,6 +178,57 @@ class ClassificationTrainer:
 
         return model
     
+    def run_test(self)->None:
+        train_dataset = ClassificationHaGridDataset(
+            self.conf,
+            op=DATASET_OPERATION.TEST,
+            transform=Compose()
+        )
+        with torch.no_grad():
+                # set to non training mode:
+            self.model.eval()
+            test_loader = DataLoader(train_dataset, batch_size=self.conf.train_params.validation_batch_size, shuffle=False)
+            
+            predicts, targets, probs = [], [], []
+            
+            log_image = []
+            
+            with tqdm(test_loader, unit="batch") as batch_loader:
+                for i, (images, labels) in enumerate(batch_loader):
+                    log_image.extend(images)
+                    images = torch.stack(list(image.to(self.conf.device) for image in images))
+                    output = self.model(images)
+                    
+                    probs.extend(output)
+                    predicts.extend(output.argmax(dim=1).cpu().numpy())
+                    targets.extend(labels.numpy())
+        
+            # get metrics i dont know why i did this but its working so not changing now
+            predicts = torch.tensor(predicts, dtype=torch.long, device=self.conf.device)
+            targets = torch.tensor(targets, dtype=torch.long, device=self.conf.device)
+            
+            metric = get_metrics(self.conf, predicts, targets)
+            f1_score = metric["f1_score"]
+            
+            # save metrics to csv
+            fields = list(metric.keys())
+            with open(os.path.join(self.output_path, "test_metrics.csv"), "w") as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(fields)
+                csvwriter.writerow(list(metric.values()))
+            
+            
+            if self.logger is not None:
+                
+                self.logger.log("test", metric)
+                self.logger.log_image_table(log_image, predicts, targets, probs)
+        
+    
 
-    def save_model(self, path:str, name:str="model"):
-        torch.save(self.model.state_dict(), os.path.join(path, name+".pth"))
+    def save_model(self, path:str, name:str="model", mode:str="torch"):
+        if mode == "torch":
+            torch.save(self.model.state_dict(), os.path.join(path, name+".pth"))
+        elif mode == "onnx":
+            save_onnx(self.model, path, name)
+            
+        logging.info(f"Model saved to {os.path.join(path, name)}")

@@ -144,7 +144,7 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
         labels = []
         ids = []
         
-        category_path = os.path.join(self.conf.dataset.annotation_path, "train" if self.op.value != DATASET_OPERATION.TEST.value else DATASET_OPERATION.TEST)
+        category_path = os.path.join(self.conf.dataset.annotation_path, "train" if self.op.value != DATASET_OPERATION.TEST.value else DATASET_OPERATION.TEST.value)
         for target in self.conf.dataset.targets:
             if target == "no_gesture":
                 continue
