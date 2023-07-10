@@ -42,20 +42,20 @@ def rescale_image(img):
 
 
 GESTURES = (
-    # "call",
-    # "dislike",
-    "fist",
+    "call",
+    "dislike",
+    # "fist",
     # "four",
-    # "like",
+    "like",
     # "mute",
-    # "ok",
+    "ok",
     # "one",
-    "palm",
+    # "palm",
     # "peace_inverted",
-    "peace",
+    # "peace",
     # "rock",
     # "stop_inverted",
-    # "stop",
+    "stop",
     # "three",
     # "three2",
     # "two_up_inverted",
@@ -63,21 +63,6 @@ GESTURES = (
 )
 
 DATASET = os.path.expanduser("~/hagrid/dataset/")
-
-# def post_download(root, output_path, target):
-    
-#     os.makedirs(f"{root}train/{target}_temp", exist_ok=True)
-#     os.system("unzip -j " + output_path +" -d " + f"{root}train/{target}")
-
-#     os.system("rm " + output_path)
-#     for image in tqdm(os.listdir(f"{root}train/{target}")):
-#         img = rescale_image(cv2.imread(f"{root}train/{target}/{image}"))
-#         cv2.imwrite(f"{root}train/{target}_temp/{image}", img)
-        
-#         os.system("rm -rf " + f"{root}train/{target}/{image}")
-        
-#     os.system("rm -r " + f"{root}train/{target}")
-#     os.system("mv " + f"{root}train/{target}_temp " + f"{root}train/{target}")
     
 def post_download(root, category, output_path, target):
     

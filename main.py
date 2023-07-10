@@ -7,7 +7,7 @@ from utils.util import full_frame_preprocess, full_frame_postprocess, crop_roi_i
 from omegaconf import OmegaConf
 
 hand_model_path = "../data/models/YoloV7_Tiny.onnx"
-gesture_model_path = r"output\HaGRID_Test\with_scheduler\gesture_model.onnx"
+gesture_model_path = r"output\MobileNetSmall\ten_sgd_20\model.onnx"
 provider = ['CPUExecutionProvider']
 threshold = 0.5
 conf = OmegaConf.load("configs/default.yaml")
@@ -25,16 +25,19 @@ if __name__ == "__main__":
     while cap.isOpened():
         ret, frame = cap.read()
         
-        if ret:
-            image, ratio, dwdh = full_frame_preprocess(frame, auto=False)
-            out = hand_inf_session.run(hand_outname, {'images': image/255})[0]
-            bbox, score = full_frame_postprocess(out, ratio, dwdh, threshold)
-            if score >= threshold:
-                cropped_image = crop_roi_image(frame, bbox, (224, 224))
-                out = gesture_inf_session.run(gesture_out_name, {'input.1': cropped_image/255})[0]
-                gesture = target_dict[out.argmax()]
-                draw_image(frame, bbox, score, gesture)
-            cv2.imshow(camera_name, frame)
+        try:
+            if ret:
+                image, ratio, dwdh = full_frame_preprocess(frame, auto=False)
+                out = hand_inf_session.run(hand_outname, {'images': image/255})[0]
+                bbox, score = full_frame_postprocess(out, ratio, dwdh, threshold)
+                if score >= threshold:
+                    cropped_image = crop_roi_image(frame, bbox, (224, 224))
+                    out = gesture_inf_session.run(gesture_out_name, {'images': cropped_image/255})[0]
+                    gesture = target_dict[out.argmax()]
+                    draw_image(frame, bbox, score, gesture)
+                cv2.imshow(camera_name, frame)
+        except Exception as e:
+            print(e)
             
             
         if cv2.waitKey(1) & 0xFF == ord('q'):

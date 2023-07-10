@@ -1,0 +1,45 @@
+project_name: AlexNet
+experiment_name: six_sgd_20
+dataset:
+  annotation_path: C:\Users\User\projects\data\annotation\
+  dataset_path: C:\Users\User\projects\data\
+  targets:
+  - call
+  - dislike
+  - like
+  - ok
+  - stop
+  - no_gesture
+  image_size:
+  - 256
+  - 256
+  subset: -1
+random_seed: 42
+device: cuda
+model:
+  name: AlexNet
+  pretrained: true
+  freezed: false
+  start_epoch: 0
+  full_frame: false
+optimizer:
+  optimizer: sgd
+  lr: 0.0001
+  momentum: 0.8
+  weight_decay: 0.001
+scheduler:
+  start_factor: 0.001
+train_params:
+  epochs: 20
+  num_workers: 16
+  train_batch_size: 32
+  validation_batch_size: 32
+  early_stopping: 10
+  dropout: 0.5
+metric_params:
+  metrics:
+  - accuracy
+  - f1_score
+  - precision
+  - recall
+  average: weighted

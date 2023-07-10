@@ -37,6 +37,7 @@ class Logger:
                 "optimizer": self.conf.optimizer.optimizer,
                 "learning_rate": self.conf.optimizer.lr,
                 "momentum": self.conf.optimizer.momentum if self.conf.optimizer.optimizer != "adam" else None,
+                "weight_decay": self.conf.optimizer.weight_decay
             })
 
     def is_logged_in(self):

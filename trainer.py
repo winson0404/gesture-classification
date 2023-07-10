@@ -43,6 +43,7 @@ class ClassificationTrainer:
             device=self.conf.device,
             pretrained=self.conf.model.pretrained,
             freezed=self.conf.model.freezed,
+            conf=self.conf
         )
         
     def _get_optimizer(self):
@@ -50,11 +51,11 @@ class ClassificationTrainer:
         trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         
         if self.conf.optimizer.optimizer == "adam":
-            optimizer = torch.optim.Adam(trainable_params, lr=self.conf.optimizer.lr)
+            optimizer = torch.optim.Adam(trainable_params, lr=self.conf.optimizer.lr, weight_decay=self.conf.optimizer.weight_decay)
         elif self.conf.optimizer.optimizer == "sgd":
-            optimizer = torch.optim.SGD(trainable_params, lr=self.conf.optimizer.lr, momentum=self.conf.optimizer.momentum)
+            optimizer = torch.optim.SGD(trainable_params, lr=self.conf.optimizer.lr, momentum=self.conf.optimizer.momentum, weight_decay=self.conf.optimizer.weight_decay)
         elif self.conf.optimizer.optimizer == "rmsprop":
-            optimizer = torch.optim.RMSprop(trainable_params, lr=self.conf.optimizer.lr, momentum=self.conf.optimizer.momentum)
+            optimizer = torch.optim.RMSprop(trainable_params, lr=self.conf.optimizer.lr, alpha=0.97, eps=1e-6)
         
         return optimizer
     
@@ -156,7 +157,6 @@ class ClassificationTrainer:
         
         best_metric = -1
         conf_dictionary = OmegaConf.to_container(self.conf)
-        self.epochs = 1
         for i in range(self.epochs):
             logging.info(f"Epoch {i+1}/{self.epochs}")
             
