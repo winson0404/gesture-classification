@@ -7,7 +7,7 @@ from utils.util import full_frame_preprocess, full_frame_postprocess, crop_roi_i
 from omegaconf import OmegaConf
 
 hand_model_path = "../data/models/YoloV7_Tiny.onnx"
-gesture_model_path = r"output\MobileNetSmall\ten_sgd_20\model.onnx"
+gesture_model_path = r"output\MobileNetV3_small\three_rmsprop_30\model.onnx"
 provider = ['CPUExecutionProvider']
 threshold = 0.5
 conf = OmegaConf.load("configs/default.yaml")

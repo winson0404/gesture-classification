@@ -14,7 +14,7 @@ setting = {
 
 random_names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
 
-variation_numbers = 9
+variation_numbers = 10
 
 # choose 3 different setting randomly
 # random_seed = 42
@@ -22,8 +22,8 @@ variation_numbers = 9
 config_root = "configs"
 
 conf = OmegaConf.load("configs/default.yaml")
-project_name = "AlexNet"
-image_size = 256
+project_name = "MobileNetV3_small"
+image_size = 224
 os.makedirs(os.path.join(config_root, project_name), exist_ok=True)
 for i in range(variation_numbers):
     conf.project_name = project_name
@@ -35,7 +35,7 @@ for i in range(variation_numbers):
     conf.optimizer.lr = random.choice(setting["lr"])
     conf.optimizer.momentum = random.choice(setting["momentum"])
     conf.optimizer.weight_decay = random.choice(setting["weight_decay"])
-    conf.train_params.epochs = random.choice(setting["epochs"]) + 10
+    conf.train_params.epochs = random.choice(setting["epochs"])
     conf.train_params.train_batch_size = random.choice(setting["batch_size"])
     conf.train_params.validation_batch_size = conf.train_params.train_batch_size
     conf.train_params.dropout = random.choice(setting["dropout"])

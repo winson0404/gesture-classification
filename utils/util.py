@@ -3,7 +3,7 @@ from torch import nn, Tensor
 import numpy as np
 import cv2
 import random
-from models.classification import MobileNetV3, AlexNet
+from models.classification import MobileNetV3, AlexNet, WinsonNet
 from utils.constants import MOBILENETV3_SIZE
 import os
 from typing import Dict, Tuple, List
@@ -188,7 +188,8 @@ def build_model(
         "MobileNetV3_small": MobileNetV3(
             num_classes=num_classes, model_size=MOBILENETV3_SIZE.SMALL, pretrained=pretrained, freezed=freezed
         ),
-        "AlexNet": AlexNet(num_classes=num_classes, pretrained=pretrained, freezed=freezed, dropout=conf.train_params.dropout)
+        "AlexNet": AlexNet(num_classes=num_classes, pretrained=pretrained, freezed=freezed, dropout=conf.train_params.dropout),
+        "WinsonNet": WinsonNet(num_classes=num_classes, dropout=conf.train_params.dropout),
     }
 
     model = models[model_name]

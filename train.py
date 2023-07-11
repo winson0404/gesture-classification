@@ -20,9 +20,9 @@ logging.basicConfig(format="[LINE:%(lineno)d] %(levelname)-8s [%(asctime)s]  %(m
 if __name__ == "__main__":
     
     #initial config
-    project = "AlexNet"
+    project = "MobileNetV3_small"
     selection = None
-    selection = "nine_adam_20.yaml"
+    # selection = "nine_adam_20.yaml"
     conf_root = os.path.join("configs", project)
     for config in os.listdir(conf_root):
         if config == "default.yaml":

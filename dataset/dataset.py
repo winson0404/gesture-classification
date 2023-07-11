@@ -152,12 +152,8 @@ class ClassificationHaGridDataset(torch.utils.data.Dataset):
             for name, dat in ann.items():
                 ids.append(f"{target}/{name}")
                 # breakpoint()
-                if len(labels) > 1:
+                if len(labels) > 1: 
                     pick = random.choices(["no_gesture", "gesture"], weights=[0.3, 0.7])[0]
-                    # for index, label in enumerate(ann["labels"]):
-                    #     if label == pick:
-                    #         labels.append(index)
-                    #         bboxes.append(ann["bbox"][index])
                     if pick == "no_gesture":
                         if dat["labels"][0] == "no_gesture":
                             labels.append(dat["labels"][0])

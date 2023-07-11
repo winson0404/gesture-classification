@@ -41,7 +41,6 @@ class MobileNetV3(torch.nn.Module):
 		return gesture
 	
 
-# class ResNet
 class AlexNet(torch.nn.Module):
 	def __init__(self, num_classes: int, pretrained: bool = False, freezed: bool = False, dropout: float = 0.5):
 		super(AlexNet, self).__init__()
@@ -80,7 +79,7 @@ class AlexNet(torch.nn.Module):
 	
 class WinsonNet(torch.nn.Module):
 	def __init__(self, num_classes:int, dropout:float = 0.5):
-		super(AlexNet,self).__init__()
+		super(WinsonNet,self).__init__()
 		
 		self.num_classes = num_classes
 		
@@ -95,8 +94,16 @@ class WinsonNet(torch.nn.Module):
   
 		self.head = nn.Sequential(
 			nn.Dropout(p=dropout, inplace=True),
-   			nn.Linear(32 * 16 * 16, 128),
+   			nn.Linear(32 * 16 * 16, 128), # image size should be 64x64
 			nn.ReLU(inplace=True),
-			nn.Linear(128, 128)
+			nn.Linear(128, 128),
+			nn.ReLU(inplace=True),
+			nn.Linear(128, num_classes)
 		)
-			
+
+	def forward(self, x:Tensor)->Tensor:
+		x = self.features(x)
+		x = torch.flatten(x, 1)
+		gesture = self.head(x)
+		
+		return gesture

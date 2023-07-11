@@ -51,7 +51,7 @@ class ClassificationTrainer:
         trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         
         if self.conf.optimizer.optimizer == "adam":
-            optimizer = torch.optim.Adam(trainable_params, lr=self.conf.optimizer.lr, weight_decay=self.conf.optimizer.weight_decay)
+            optimizer = torch.optim.Adam(trainable_params, lr=self.conf.optimizer.lr, eps=1e-6)
         elif self.conf.optimizer.optimizer == "sgd":
             optimizer = torch.optim.SGD(trainable_params, lr=self.conf.optimizer.lr, momentum=self.conf.optimizer.momentum, weight_decay=self.conf.optimizer.weight_decay)
         elif self.conf.optimizer.optimizer == "rmsprop":
@@ -88,7 +88,7 @@ class ClassificationTrainer:
             
                 loss_value = loss.item()
                 
-                if self.logger is not None:
+                if self.logger is not None and step % 5 == 0:
                     self.logger.log("train", {"loss": loss_value})
 
                 if not math.isfinite(loss_value):
@@ -229,6 +229,6 @@ class ClassificationTrainer:
         if mode == "torch":
             torch.save(self.model.state_dict(), os.path.join(path, name+".pth"))
         elif mode == "onnx":
-            save_onnx(self.model, path, name)
+            save_onnx(self.model, path, name, input_shape=(3, self.conf.dataset.image_size[0],self.conf.dataset.image_size[1]))
             
         logging.info(f"Model saved to {os.path.join(path, name)}")
